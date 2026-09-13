@@ -31,15 +31,31 @@ public:
     }
 
     // Prints formatted board with coordinates and borders
+    // Prints formatted board with coordinates and borders
     void display() const {
-        // TODO (Member 3): Implement formatted output matching PDF specification:
-        //    1   2   3
-        // 1  X | O |  
-        //   ---+---+---
-        // 2    | X | O
-        //   ---+---+---
-        // 3  O |   | X
+    cout << "  ";
+    for (int c = 1; c <= size; c++) {
+        cout << "  " << c << " ";
     }
+    cout << "\n";
+
+    for (int r = 0; r < size; r++) {
+        cout << (r + 1) << " ";
+        for (int c = 0; c < size; c++) {
+            cout << " " << grid[r][c] << " ";
+            if (c < size - 1) cout << "|";
+        }
+        cout << "\n";
+        if (r < size - 1) {
+            cout << "  ";
+            for (int c = 0; c < size; c++) {
+                cout << "---";
+                if (c < size - 1) cout << "+";
+            }
+            cout << "\n";
+        }
+    }
+}
 
     // Places symbol if move is valid, returns success status
     bool makeMove(int row, int col, char symbol) {
@@ -52,18 +68,63 @@ public:
         // TODO (Member 2): Check boundaries [0, size-1] and grid[row][col] == ' '
         return false;
     }
-
     // Checks all win conditions (rows, columns, diagonals)
     bool checkWin(char symbol) const {
-        // TODO (Member 3): Verify if 3 matching symbols exist in any row, column, or diagonal
-        return false;
+   
+    for (int r = 0; r < size; r++) {
+        bool rowWin = true;
+        for (int c = 0; c < size; c++) {
+            if (grid[r][c] != symbol) {
+                rowWin = false;
+                break;
+            }
+        }
+        if (rowWin) return true;
     }
+
+    for (int c = 0; c < size; c++) {
+        bool colWin = true;
+        for (int r = 0; r < size; r++) {
+            if (grid[r][c] != symbol) {
+                colWin = false;
+                break;
+            }
+        }
+        if (colWin) return true;
+    }
+
+    bool diag1Win = true;
+    for (int i = 0; i < size; i++) {
+        if (grid[i][i] != symbol) {
+            diag1Win = false;
+            break;
+        }
+    }
+    if (diag1Win) return true;
+
+    bool diag2Win = true;
+    for (int i = 0; i < size; i++) {
+        if (grid[i][size - 1 - i] != symbol) {
+            diag2Win = false;
+            break;
+        }
+    }
+    if (diag2Win) return true;
+
+    return false;
+}
 
     // Checks if all cells are occupied
     bool isFull() const {
-        // TODO (Member 3): Check if no ' ' cells remain
-        return false;
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            if (grid[i][j] == ' ') {
+                return false;
+            }
+        }
     }
+    return true;
+}
 
     // Returns the symbol at specified coordinates
     char getCell(int row, int col) const {
