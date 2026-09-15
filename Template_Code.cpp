@@ -7,65 +7,74 @@
 
 using namespace std;
 
-// ============================================================================
-// ENUMS & CONSTANTS
-// ============================================================================
 enum Difficulty {
     EASY,
     HARD
 };
 
-// ============================================================================
-// CLASS: Board
-// Responsibilities: Manage game board state and validation
-// ============================================================================
 class Board {
 private:
     vector<vector<char>> grid;
     const int size;
 
 public:
-    // Constructor: Initializes empty grid of given size (default 3)
     Board(int size = 3) : size(size) {
         grid.resize(size, vector<char>(size, ' '));
     }
 
-    // Prints formatted board with coordinates and borders
     void display() const {
-        // TODO (Member 3): Implement formatted output matching PDF specification:
-        //    1   2   3
-        // 1  X | O |  
-        //   ---+---+---
-        // 2    | X | O
-        //   ---+---+---
-        // 3  O |   | X
+        cout << "\n    1   2   3\n";
+        for (int i = 0; i < size; ++i) {
+            cout << " " << (i + 1) << "  ";
+            for (int j = 0; j < size; ++j) {
+                cout << grid[i][j];
+                if (j < size - 1) cout << " | ";
+            }
+            cout << "\n";
+            if (i < size - 1) {
+                cout << "   ---+---+---\n";
+            }
+        }
+        cout << "\n";
     }
 
-    // Places symbol if move is valid, returns success status
-    bool makeMove(int row, int col, char symbol) {
-        // TODO (Member 2): Place symbol on grid if validMove and return true, else false
-        return false;
-    }
-
-    // Checks if coordinates are valid and cell is empty (0-based indexing)
     bool isValidMove(int row, int col) const {
-        // TODO (Member 2): Check boundaries [0, size-1] and grid[row][col] == ' '
-        return false;
+        return (row >= 0 && row < size && col >= 0 && col < size && grid[row][col] == ' ');
     }
 
-    // Checks all win conditions (rows, columns, diagonals)
+    bool makeMove(int row, int col, char symbol) {
+        if (!isValidMove(row, col)) {
+            return false;
+        }
+        grid[row][col] = symbol;
+        return true;
+    }
+
+    void undoMove(int row, int col) {
+        if (row >= 0 && row < size && col >= 0 && col < size) {
+            grid[row][col] = ' ';
+        }
+    }
+
     bool checkWin(char symbol) const {
-        // TODO (Member 3): Verify if 3 matching symbols exist in any row, column, or diagonal
+        for (int i = 0; i < size; ++i) {
+            if (grid[i][0] == symbol && grid[i][1] == symbol && grid[i][2] == symbol) return true;
+            if (grid[0][i] == symbol && grid[1][i] == symbol && grid[2][i] == symbol) return true;
+        }
+        if (grid[0][0] == symbol && grid[1][1] == symbol && grid[2][2] == symbol) return true;
+        if (grid[0][2] == symbol && grid[1][1] == symbol && grid[2][0] == symbol) return true;
         return false;
     }
 
-    // Checks if all cells are occupied
     bool isFull() const {
-        // TODO (Member 3): Check if no ' ' cells remain
-        return false;
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
+                if (grid[i][j] == ' ') return false;
+            }
+        }
+        return true;
     }
 
-    // Returns the symbol at specified coordinates
     char getCell(int row, int col) const {
         if (row >= 0 && row < size && col >= 0 && col < size) {
             return grid[row][col];
@@ -73,21 +82,19 @@ public:
         return ' ';
     }
 
-    // Clears all cells to empty state
     void reset() {
-        // TODO (Member 2): Reset all cells in grid to ' '
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
+                grid[i][j] = ' ';
+            }
+        }
     }
 
-    // Returns the dimension of the board
     int getSize() const {
         return size;
     }
 };
 
-// ============================================================================
-// ABSTRACT BASE CLASS: Player
-// Responsibilities: Base class for player entities
-// ============================================================================
 class Player {
 protected:
     string name;
@@ -97,7 +104,6 @@ public:
     Player(const string& name, char symbol) : name(name), symbol(symbol) {}
     virtual ~Player() = default;
 
-    // Pure virtual function to be implemented by derived classes
     virtual void getMove(int& row, int& col) = 0;
 
     string getName() const { return name; }
@@ -105,23 +111,13 @@ public:
     void setName(const string& newName) { name = newName; }
 };
 
-// ============================================================================
-// CLASS: HumanPlayer (Derived from Player)
-// Responsibilities: Represents human player input
-// ============================================================================
 class HumanPlayer : public Player {
 public:
     HumanPlayer(const string& name, char symbol) : Player(name, symbol) {}
 
-    void getMove(int& row, int& col) override {
-        // Handled via Game::handleHumanMove for robust I/O recovery
-    }
+    void getMove(int& row, int& col) override {}
 };
 
-// ============================================================================
-// CLASS: AIPlayer (Derived from Player)
-// Responsibilities: Computer opponent implementation (Easy & Hard / Minimax)
-// ============================================================================
 class AIPlayer : public Player {
 private:
     Difficulty difficulty;
@@ -136,12 +132,9 @@ public:
         difficulty = newDifficulty;
     }
 
-    // Determines AI move based on difficulty level
-    void getMove(int& row, int& col) override {
-        // Overridden by getAIMove(const Board& board, int& row, int& col)
-    }
+    void getMove(int& row, int& col) override {}
 
-    void getAIMove(const Board& board, int& row, int& col) {
+    void getAIMove(Board& board, int& row, int& col) {
         if (difficulty == EASY) {
             getRandomMove(board, row, col);
         } else {
@@ -149,33 +142,87 @@ public:
         }
     }
 
-    // Easy AI: Selects random valid move
     void getRandomMove(const Board& board, int& row, int& col) const {
-        // TODO (Member 5): Collect all valid (empty) coordinates and pick one randomly
+        vector<pair<int, int>> available;
+        for (int i = 0; i < board.getSize(); ++i) {
+            for (int j = 0; j < board.getSize(); ++j) {
+                if (board.isValidMove(i, j)) {
+                    available.push_back({i, j});
+                }
+            }
+        }
+        if (!available.empty()) {
+            int idx = rand() % available.size();
+            row = available[idx].first;
+            col = available[idx].second;
+        }
     }
 
-    // Hard AI: Evaluates board state for scoring (win: +10, loss: -10, draw: 0)
     int evaluateBoard(const Board& board) const {
-        // TODO (Member 6): Evaluate terminal state from this AI's perspective
+        char opponentSymbol = (symbol == 'X') ? 'O' : 'X';
+        if (board.checkWin(symbol)) return +10;
+        if (board.checkWin(opponentSymbol)) return -10;
         return 0;
     }
 
-    // Minimax recursive algorithm
     int minimax(Board& board, int depth, bool isMaximizing) {
-        // TODO (Member 6): Implement recursive Minimax game tree search
-        return 0;
+        int score = evaluateBoard(board);
+        if (score == 10) return score - depth;
+        if (score == -10) return score + depth;
+        if (board.isFull()) return 0;
+
+        char opponentSymbol = (symbol == 'X') ? 'O' : 'X';
+
+        if (isMaximizing) {
+            int best = -1000;
+            for (int i = 0; i < board.getSize(); ++i) {
+                for (int j = 0; j < board.getSize(); ++j) {
+                    if (board.isValidMove(i, j)) {
+                        board.makeMove(i, j, symbol);
+                        best = max(best, minimax(board, depth + 1, false));
+                        board.undoMove(i, j);
+                    }
+                }
+            }
+            return best;
+        } else {
+            int best = 1000;
+            for (int i = 0; i < board.getSize(); ++i) {
+                for (int j = 0; j < board.getSize(); ++j) {
+                    if (board.isValidMove(i, j)) {
+                        board.makeMove(i, j, opponentSymbol);
+                        best = min(best, minimax(board, depth + 1, true));
+                        board.undoMove(i, j);
+                    }
+                }
+            }
+            return best;
+        }
     }
 
-    // Hard AI: Finds optimal move using Minimax
-    void getBestMove(Board board, int& row, int& col) {
-        // TODO (Member 6): Call minimax on all possible moves and pick the optimal one
+    void getBestMove(Board& board, int& row, int& col) {
+        int bestVal = -1000;
+        row = -1;
+        col = -1;
+
+        for (int i = 0; i < board.getSize(); ++i) {
+            for (int j = 0; j < board.getSize(); ++j) {
+                if (board.isValidMove(i, j)) {
+                    board.makeMove(i, j, symbol);
+                    int moveVal = minimax(board, 0, false);
+                    board.undoMove(i, j);
+
+                    if (moveVal > bestVal) {
+                        bestVal = moveVal;
+                        row = i;
+                        col = j;
+                    }
+                }
+            }
+        }
     }
 };
 
-// ============================================================================
-// CLASS: Game
-// Responsibilities: Manage game flow and coordination
-// ============================================================================
 class Game {
 private:
     Board board;
@@ -187,68 +234,157 @@ public:
     Game() : board(3), player1(nullptr), player2(nullptr), currentPlayer(nullptr) {}
 
     ~Game() {
+        cleanPlayers();
+    }
+
+    void cleanPlayers() {
         delete player1;
         delete player2;
+        player1 = nullptr;
+        player2 = nullptr;
+        currentPlayer = nullptr;
     }
 
-    // Main game entry point, controls overall flow
-    void start() {
-        // TODO (محمود - Team Leader):
-        // 1. Loop displaying showMenu()
-        // 2. Play rounds using currentPlayer, handleHumanMove, handleAIMove
-        // 3. Check checkGameOver()
-        // 4. Display displayResult()
-        // 5. Ask for replay (y/n)
-    }
-
-    // Displays mode selection menu and handles user choice
     void showMenu() {
-        // TODO (محمود - Team Leader):
-        // 1. Player vs Player
-        // 2. Player vs Computer (Easy)
-        // 3. Player vs Computer (Hard)
-        // 4. Exit
+        cout << "=================================\n";
+        cout << "       TIC-TAC-TOE GAME          \n";
+        cout << "=================================\n";
+        cout << "1. Player vs Player\n";
+        cout << "2. Player vs Computer (Easy)\n";
+        cout << "3. Player vs Computer (Hard)\n";
+        cout << "4. Exit\n";
+        cout << "Select game mode: ";
     }
 
     void setupPvP() {
-        // TODO: Prompt for Player 1 & Player 2 names, initialize HumanPlayer instances
+        cleanPlayers();
+        string name1, name2;
+        cout << "Enter Player 1 name (X): ";
+        cin >> name1;
+        cout << "Enter Player 2 name (O): ";
+        cin >> name2;
+        player1 = new HumanPlayer(name1, 'X');
+        player2 = new HumanPlayer(name2, 'O');
+        currentPlayer = player1;
     }
 
     void setupPvC(Difficulty difficulty) {
-        // TODO: Prompt for Human name, initialize AIPlayer with given difficulty
+        cleanPlayers();
+        string name;
+        cout << "Enter your name (X): ";
+        cin >> name;
+        player1 = new HumanPlayer(name, 'X');
+        player2 = new AIPlayer("Computer", 'O', difficulty);
+        currentPlayer = player1;
     }
 
     void switchPlayer() {
-        // TODO (محمود - Team Leader): Toggle currentPlayer between player1 and player2
+        currentPlayer = (currentPlayer == player1) ? player2 : player1;
     }
 
     void handleHumanMove(Player* player) {
-        // TODO (Member 4): Prompt player for (row, col) in 1-based format.
-        // Validate ranges [1-3], check cin.fail(), recover input buffer, check board.isValidMove.
+        int r, c;
+        while (true) {
+            cout << player->getName() << " (" << player->getSymbol() << "), enter your move (row and column: 1-3): ";
+            if (cin >> r >> c) {
+                int rowIdx = r - 1;
+                int colIdx = c - 1;
+                if (board.isValidMove(rowIdx, colIdx)) {
+                    board.makeMove(rowIdx, colIdx, player->getSymbol());
+                    break;
+                } else {
+                    cout << "Invalid move. Cell is either occupied or out of bounds. Try again.\n";
+                }
+            } else {
+                cout << "Invalid input. Please enter two integers between 1 and 3.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
     }
 
     void handleAIMove(AIPlayer* aiPlayer) {
-        // TODO (Member 5): Display AI thinking message, execute getAIMove, apply move to board
+        cout << aiPlayer->getName() << " (" << aiPlayer->getSymbol() << ") is thinking...\n";
+        int r = -1, c = -1;
+        aiPlayer->getAIMove(board, r, c);
+        board.makeMove(r, c, aiPlayer->getSymbol());
+        cout << aiPlayer->getName() << " placed '" << aiPlayer->getSymbol() << "' at " << (r + 1) << " " << (c + 1) << "\n";
     }
 
     bool checkGameOver() {
-        // TODO (محمود - Team Leader): Check if currentPlayer won or if board.isFull()
+        if (board.checkWin(currentPlayer->getSymbol())) {
+            board.display();
+            cout << "Congratulations! " << currentPlayer->getName() << " wins!\n";
+            return true;
+        }
+        if (board.isFull()) {
+            board.display();
+            cout << "The game ended in a draw!\n";
+            return true;
+        }
         return false;
     }
 
-    void displayResult() const {
-        // TODO (محمود - Team Leader): Show congratulations message or draw announcement
+    void reset() {
+        board.reset();
+        currentPlayer = player1;
     }
 
-    void reset() {
-        // TODO (محمود - Team Leader): Clear board and reset starting player for new round
-        board.reset();
+    void playRound() {
+        reset();
+        while (true) {
+            board.display();
+            if (HumanPlayer* hp = dynamic_cast<HumanPlayer*>(currentPlayer)) {
+                handleHumanMove(hp);
+            } else if (AIPlayer* ap = dynamic_cast<AIPlayer*>(currentPlayer)) {
+                handleAIMove(ap);
+            }
+
+            if (checkGameOver()) {
+                break;
+            }
+
+            switchPlayer();
+        }
+    }
+
+    void start() {
+        int choice;
+        while (true) {
+            showMenu();
+            if (!(cin >> choice)) {
+                cout << "Invalid selection. Please enter a valid number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                continue;
+            }
+
+            if (choice == 4) {
+                cout << "Exiting game. Goodbye!\n";
+                break;
+            }
+
+            if (choice == 1) {
+                setupPvP();
+            } else if (choice == 2) {
+                setupPvC(EASY);
+            } else if (choice == 3) {
+                setupPvC(HARD);
+            } else {
+                cout << "Choice out of range. Please choose between 1 and 4.\n";
+                continue;
+            }
+
+            char replay = 'y';
+            while (replay == 'y' || replay == 'Y') {
+                playRound();
+                cout << "Do you want to play again? (y/n): ";
+                cin >> replay;
+            }
+        }
     }
 };
 
-// ============================================================================
-// MAIN FUNCTION
-// ============================================================================
 int main() {
     Game game;
     game.start();
